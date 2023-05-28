@@ -8,7 +8,7 @@ from qsar.splitters.scaffold import ScaffoldSplitter
 
 
 def load_data(
-    data_path: str, activity_column_name: str, sep: str = ";"
+    data_path: str, activity_column_name: str, sep: str = ","
 ) -> pd.DataFrame:
     """
     Loads activity data from a CSV file.
