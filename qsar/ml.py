@@ -1,10 +1,11 @@
 import os
 import pickle
 from datetime import datetime
+from typing import Optional, Tuple
 
-from typing import Optional
 import numpy as np
 import pandas as pd
+import sklearn.base
 import torch
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import ParameterGrid
@@ -18,13 +19,30 @@ def train_rf(
     X_train: np.ndarray,
     X_valid: np.ndarray,
     X_test: np.ndarray,
-    y_train: pd.Series,
-    y_valid: pd.Series,
-    y_test: pd.Series,
-    save_name=None,
+    y_train: np.ndarray,
+    y_valid: np.ndarray,
+    y_test: np.ndarray,
+    save_name: Optional[str] = None,
     task_type: str = "regression",
     grid: Optional[dict] = None,
-):
+) -> Tuple[float, float, dict]:
+    """
+    Runs a hyperparameter search for the random forest algorithm.
+
+    Args:
+        X_train: training data features.
+        X_valid: validation data features.
+        X_test: testing data features.
+        y_train: training data labels.
+        y_valid: validation data labels.
+        y_test: testing data labels.
+        save_name: name of the file where the results are saved; if None, nothing is saved.
+        task_type: type of the learning problem (regression or classification).
+        grid: dictionary of hyperparameters to tune; if None, a default hyperparameter set is used.
+
+    Returns:
+        (valid score, test score, best hyperparameters)
+    """
     if not grid:
         grid = {"n_estimators": [300]}
     if task_type == "regression":
@@ -48,13 +66,30 @@ def train_svm(
     X_train: np.ndarray,
     X_valid: np.ndarray,
     X_test: np.ndarray,
-    y_train: pd.Series,
-    y_valid: pd.Series,
-    y_test: pd.Series,
-    save_name=None,
+    y_train: np.ndarray,
+    y_valid: np.ndarray,
+    y_test: np.ndarray,
+    save_name: Optional[str] = None,
     task_type: str = "regression",
     grid: Optional[dict] = None,
-):
+) -> Tuple[float, float, dict]:
+    """
+    Runs a hyperparameter search for the SVM algorithm.
+
+    Args:
+        X_train: training data features.
+        X_valid: validation data features.
+        X_test: testing data features.
+        y_train: training data labels.
+        y_valid: validation data labels.
+        y_test: testing data labels.
+        save_name: name of the file where the results are saved; if None, nothing is saved.
+        task_type: type of the learning problem (regression or classification).
+        grid: dictionary of hyperparameters to tune; if None, a default hyperparameter set is used.
+
+    Returns:
+        (valid score, test score, best hyperparameters)
+    """
     if not grid:
         grid = {
             "kernel": ["rbf"],
@@ -73,7 +108,28 @@ def train_svm(
     )
 
 
-def make_network(hidden_size, input_size, num_layers, batch_norm, dropout, activation):
+def make_network(
+    hidden_size: float,
+    input_size: float,
+    num_layers: int,
+    batch_norm: bool,
+    dropout: float,
+    activation: torch.nn.Module,
+) -> torch.Module:
+    """
+    Builds a neural network architecture using the given hyperparameters.
+
+    Args:
+        hidden_size: size of the hidden dimension.
+        input_size: size of the input features.
+        num_layers: number of layers.
+        batch_norm: if True, batch norm is used.
+        dropout: dropout rate.
+        activation: activation function.
+
+    Returns:
+        Neural network architecture.
+    """
     layers = [torch.nn.Linear(input_size, hidden_size)]
     if batch_norm:
         layers.append(torch.nn.BatchNorm1d(hidden_size))
@@ -96,13 +152,30 @@ def train_nn(
     X_train: np.ndarray,
     X_valid: np.ndarray,
     X_test: np.ndarray,
-    y_train: pd.Series,
-    y_valid: pd.Series,
-    y_test: pd.Series,
-    save_name=None,
+    y_train: np.ndarray,
+    y_valid: np.ndarray,
+    y_test: np.ndarray,
+    save_name: Optional[str] = None,
     task_type: str = "regression",
     grid: Optional[dict] = None,
-):
+) -> Tuple[float, float, dict]:
+    """
+    Runs a hyperparameter search for the artificial neural network.
+
+    Args:
+        X_train: training data features.
+        X_valid: validation data features.
+        X_test: testing data features.
+        y_train: training data labels.
+        y_valid: validation data labels.
+        y_test: testing data labels.
+        save_name: name of the file where the results are saved; if None, nothing is saved.
+        task_type: type of the learning problem (regression or classification).
+        grid: dictionary of hyperparameters to tune; if None, a default hyperparameter set is used.
+
+    Returns:
+        (valid score, test score, best hyperparameters)
+    """
     input_size = X_train.shape[1]
     X_train = X_train.to_numpy().astype(np.float32)
     X_valid = X_valid.to_numpy().astype(np.float32)
@@ -159,8 +232,32 @@ def train_nn(
 
 
 def run_grid_search(
-    model_fn, grid, save_name, X_train, y_train, X_valid, y_valid, X_test, y_test
+    model_fn: sklearn.base.BaseEstimator,
+    grid: Optional[dict],
+    save_name: Optional[str],
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_valid: np.ndarray,
+    y_valid: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
 ):
+    """
+    Runs a hyperparameter search for the given model.
+
+    Args:
+        model_fn: machine learning model constructor.
+        grid: dictionary of hyperparameters to tune; if None, a default hyperparameter set is used.
+        X_train: training data features.
+        X_valid: validation data features.
+        X_test: testing data features.
+        y_train: training data labels.
+        y_valid: validation data labels.
+        y_test: testing data labels.
+
+    Returns:
+        (valid score, test score, best hyperparameters)
+    """
     hps_results = []
     best_score = -np.inf
     best_params = None
@@ -199,6 +296,22 @@ def train_model(
     save_path: str = "./models",
     task_type: str = "regression",
 ):
+    """
+    Trains a machine learning model and returns its best validation and test scores
+    along with the best hyperparameter set found in a grid search.
+
+    Args:
+        df_train: training data frame (must contain smiles and y).
+        df_valid: validation data frame (must contain smiles and y).
+        df_test: testing data frame (must contain smiles and y).
+        model_name: name of the machine learning algorithm (supported: rf, svm, nn).
+        descriptors: list of the descriptors to us; if None, all computed descriptors are used.
+        save_path: path to where results should be saved.
+        task_type: type of the learning problem (regression or classification).
+
+    Returns:
+        (valid score, test score, best hyperparameters)
+    """
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     now = datetime.now()

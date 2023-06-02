@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-from rdkit.Chem import AllChem
-from rdkit.ML.Descriptors.MoleculeDescriptors import MolecularDescriptorCalculator
-
 from mordred import Calculator, descriptors
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.ML.Descriptors.MoleculeDescriptors import MolecularDescriptorCalculator
 
 DESC_LIST = [
     "BalabanJ",
